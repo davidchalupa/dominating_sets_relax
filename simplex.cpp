@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <ctime>
+#include <numeric>
 
 #include "common.h"
 #include "simplex.h"
@@ -149,9 +150,78 @@ public:
     }
 };
 
+class StrictMDSLowerBound2 {
+public:
+    double compute(graph G) {
+        int n = G->n;
+        if (n <= 0) return 0.0;
+
+        std::vector<double> y(n, 0.0);
+        std::vector<double> current_load(n, 0.0);
+
+        const double epsilon = 1e-12;
+        const double limit = 1.0 - epsilon;
+
+        // 1. Create an ordering of vertices based on degree (ascending)
+        // Heuristic: Small neighborhoods are easier to "fill" without
+        // blocking too many neighboring constraints.
+        std::vector<int> order(n);
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(), [&](int a, int b) {
+            return G->V[a].edgecount < G->V[b].edgecount;
+        });
+
+        // 2. Multi-pass greedy packing
+        // We use the degree-ascending order to maximize the packing.
+        for (int pass = 0; pass < 5; pass++) {
+            bool changed = false;
+
+            for (int i : order) {
+                // Calculate max allowable increase for y[i]
+                // It must satisfy: y[i] + load[j] <= 1.0 for all j in N[i]
+                double max_increase = limit - current_load[i];
+                if (max_increase <= epsilon) continue;
+
+                for (int k = 0; k < G->V[i].edgecount; k++) {
+                    int neighbor = G->V[i].sibl[k];
+                    double slack = limit - current_load[neighbor];
+                    if (slack < max_increase) max_increase = slack;
+                    if (max_increase <= epsilon) break;
+                }
+
+                if (max_increase > epsilon) {
+                    y[i] += max_increase;
+                    current_load[i] += max_increase;
+                    for (int k = 0; k < G->V[i].edgecount; k++) {
+                        int neighbor = G->V[i].sibl[k];
+                        current_load[neighbor] += max_increase;
+                    }
+                    changed = true;
+                }
+            }
+
+            // On subsequent passes, we can shuffle the order slightly
+            // to find small pockets of slack missed by the degree heuristic.
+            if (!changed) break;
+            std::random_shuffle(order.begin(), order.end());
+        }
+
+        // 3. Final summation
+        double lower_bound = 0.0;
+        for (double val : y) {
+            lower_bound += val;
+        }
+
+        return lower_bound;
+    }
+};
+
 double get_mds_lower_bound(graph G) {
-    StrictMDSLowerBound solver;
+//    StrictMDSLowerBound solver;
+//    return solver.compute(G);
+    StrictMDSLowerBound2 solver;
     return solver.compute(G);
+
 //    RelaxedLPRelaxationSolver solver;
 //    return solver.compute_lower_bound(G);
 }

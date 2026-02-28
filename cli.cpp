@@ -506,10 +506,12 @@ int cli::choose_algorithm()
 
     double simplex_lower_bound = get_mds_lower_bound(G);
 
-    printf("%.2lf <= dominating set size\n",simplex_lower_bound);
+    printf("%.2lf <= dominating set size\n", simplex_lower_bound);
 
-    refer own_lower_bound = (refer) simplex_lower_bound;
+    refer own_lower_bound = (refer) ceil(simplex_lower_bound);
 
+    printf("Final lower bound to use:\n");
+    printf("%u <= dominating set size\n", own_lower_bound);
 
     for (int run=0;run<MAX_ALGORITHM;run++)
     {
@@ -537,7 +539,7 @@ int cli::choose_algorithm()
             obdom->obdom(G, result, max_time, own_lower_bound, &partial_t_msobdom, true, true);
             //obdom->obdom(G, result, max_time, own_lower_bound, &partial_t_msobdom, true, false, false, true);
         }
-        printf("\n");*/
+        printf("\n");
 
         undominated_vertices_msob = problemdom->undominated_vertices_count(G, result);
         if (dominating_set_size_msob >= problemdom->dominating_set_size(G, result))
@@ -545,7 +547,7 @@ int cli::choose_algorithm()
             dominating_set_size_msob = problemdom->dominating_set_size(G, result);
         }
         t_msobdom += partial_t_msobdom;
-        dominating_set_size_average_msob += (double) problemdom->dominating_set_size(G, result);
+        dominating_set_size_average_msob += (double) problemdom->dominating_set_size(G, result);*/
 
         // output - temporary
         /*bool out[MAX_VERTICES],out2[MAX_VERTICES];
